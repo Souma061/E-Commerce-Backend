@@ -63,4 +63,26 @@ export class RedisService implements OnModuleDestroy, OnModuleInit {
     async ttl(key: string): Promise<number> {
         return this.redisClient.ttl(key);
     }
+    async incrementWithExpiry(key: string, ttlSecond: number): Promise<number> {
+        const result = await this.redisClient.eval(
+            `
+            local count = redis.call('INCR', KEYS[1])
+            if count == 1 then
+                redis.call('EXPIRE', KEYS[1], ARGV[1])
+            end
+            return count
+        `,
+            1,
+            key,
+            ttlSecond,
+        );
+        return result as number;
+    }
 }
+// we have add this inccrementWithExpiry method becuase: incr -> app crashes -> expiry never happens.
+// but in this method we performed conditional expiry.
+
+// in redis: commands are executed in single thread.
+// so,it's atomic.
+
+// lua script + eval() is atomic

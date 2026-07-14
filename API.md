@@ -1,136 +1,128 @@
-# E-Commerce Backend — API Documentation
+# API Reference
 
-This document maintains the API reference for the E-Commerce Backend application.
-
-## Base URL
-* **Development:** `http://localhost:3000`
+**Base URL:** `http://localhost:3000`
 
 ---
 
-## Authentication (`/auth`)
+## Auth
 
-### 1. Register User
-Create a new user account in the system.
+### `POST /auth/register`
 
-* **Endpoint:** `/auth/register`
-* **Method:** `POST`
-* **Content-Type:** `application/json`
+Create a new user account.
 
-#### Request Body
+**Request body:**
 ```json
 {
   "email": "user@example.com",
-  "password": "strongpassword123",
+  "password": "password123",
   "name": "John Doe"
 }
 ```
 
-| Field | Type | Validation Rules | Description |
-| :--- | :--- | :--- | :--- |
-| `email` | `string` | Required, Email format, 5 to 50 chars | User's unique email address (will be trimmed and lowercased) |
-| `password` | `string` | Required, 8 to 20 chars | User's account password |
-| `name` | `string` | Required, 2 to 30 chars | User's display name (will be trimmed) |
-
-#### Success Response (`201 Created`)
+**Response `201`:**
 ```json
 {
-  "id": "cm4d9z1ab00003b6t12345678",
+  "id": "uuid",
   "email": "user@example.com",
   "name": "John Doe",
   "role": "CUSTOMER",
-  "createdAt": "2026-07-13T07:11:27.000Z"
+  "createdAt": "2026-07-14T00:00:00.000Z"
 }
 ```
 
-#### Error Responses
+**Errors:** `409 Conflict` — email already registered.
 
-##### Email Already Exists (`409 Conflict`)
+---
+
+### `POST /auth/login`
+
+Authenticate and receive a session cookie.
+
+**Request body:**
 ```json
 {
-  "message": "An account with email user@example.com already exists",
-  "error": "Conflict",
-  "statusCode": 409
+  "email": "user@example.com",
+  "password": "password123"
 }
 ```
 
-##### Validation Failed (`400 Bad Request`)
-Returned when request payload validation fails.
+**Response `201`:**
 ```json
 {
-  "message": [
-    "Invalid email address",
-    "Password must be at least 8 characters long",
-    "Name must be at least 2 characters long"
-  ],
-  "error": "Bad Request",
+  "message": "Login successful"
+}
+```
+
+**Cookie set:** `session` (httpOnly, sameSite=lax, secure=prod, maxAge=7d)
+
+**Errors:**
+- `401 Unauthorized` — invalid email or password
+- `429 Too Many Requests` — 5 failed attempts in 10 minutes (per email)
+
+---
+
+### `POST /auth/logout`
+
+Destroy the current session.
+
+**Cookie required:** `session`
+
+**Response `200`:**
+```json
+{
+  "message": "Logout successful"
+}
+```
+
+---
+
+### `GET /auth/me`
+
+Get the authenticated user's profile.
+
+**Cookie required:** `session`
+
+**Response `200`:**
+```json
+{
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "role": "CUSTOMER",
+  "createdAt": "2026-07-14T00:00:00.000Z"
+}
+```
+
+**Errors:** `401 Unauthorized` — missing or invalid session.
+
+---
+
+## Error Format
+
+All errors return:
+```json
+{
+  "message": "Description of the error",
+  "error": "Error type",
   "statusCode": 400
 }
 ```
 
 ---
 
-### 2. Login User
-Authenticate an existing user.
+## Rate Limiting
 
-* **Endpoint:** `/auth/login`
-* **Method:** `POST`
-* **Content-Type:** `application/json`
+- **Login:** 5 attempts per 10 minutes per email (hashed Redis key `rate_limit:<sha256(email)>`)
+- **Scope:** per-email, not per-IP
+- **Reset:** on successful login (counter cleared)
 
-#### Request Body
-```json
-{
-  "email": "user@example.com",
-  "password": "strongpassword123"
-}
-```
+---
 
-| Field | Type | Validation Rules | Description |
-| :--- | :--- | :--- | :--- |
-| `email` | `string` | Required, Email format, 5 to 50 chars | User's registered email address |
-| `password` | `string` | Required, 8 to 20 chars | User's password |
+## Validation
 
-#### Success Response (`201 Created`)
-*Note: In NestJS, POST routes return `201 Created` by default.*
-```json
-{
-  "id": "cm4d9z1ab00003b6t12345678",
-  "email": "user@example.com",
-  "name": "John Doe",
-  "role": "CUSTOMER",
-  "createdAt": "2026-07-13T07:11:27.000Z"
-}
-```
+All endpoints validate input via `class-validator` + `ValidationPipe`:
+- `email`: valid email, 5–50 chars
+- `password`: 8–20 chars
+- `name`: 2–30 chars
 
-#### Error Responses
-
-##### Email Not Found (`401 Unauthorized`)
-*Note: In production, this will be unified to "Invalid email or password" to prevent user enumeration.*
-```json
-{
-  "message": "No account found with this email",
-  "error": "Unauthorized",
-  "statusCode": 401
-}
-```
-
-##### Incorrect Password (`401 Unauthorized`)
-*Note: In production, this will be unified to "Invalid email or password" to prevent user enumeration.*
-```json
-{
-  "message": "Incorrect password",
-  "error": "Unauthorized",
-  "statusCode": 401
-}
-```
-
-##### Validation Failed (`400 Bad Request`)
-```json
-{
-  "message": [
-    "Invalid email address",
-    "Password must be at least 8 characters long"
-  ],
-  "error": "Bad Request",
-  "statusCode": 400
-}
-```
+Unknown fields are stripped (`whitelist: true`) or rejected (`forbidNonWhitelisted: true`).
