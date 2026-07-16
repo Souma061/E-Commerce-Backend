@@ -1,6 +1,15 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Redis } from 'ioredis';
+import { Redis, Result } from 'ioredis';
+// extending ioredis's type so that typescript knows about the custom command
+declare module 'ioredis' {
+    interface RedisCommander<Context> {
+        incrementWithExpiry(
+            key: string,
+            ttlSeconds: number,
+        ): Result<number, Context>;
+    }
+}
 
 @Injectable()
 export class RedisService implements OnModuleDestroy, OnModuleInit {
@@ -11,6 +20,15 @@ export class RedisService implements OnModuleDestroy, OnModuleInit {
 
         this.redisClient = new Redis(redisUrl, {
             lazyConnect: true,
+        });
+        this.redisClient.defineCommand('incrementWithExpiry', {
+            numberOfKeys: 1,
+            lua: `
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return count`,
         });
         this.redisClient.on('error', (err) => {
             console.error('Redis Error', err);
@@ -63,23 +81,14 @@ export class RedisService implements OnModuleDestroy, OnModuleInit {
     async ttl(key: string): Promise<number> {
         return this.redisClient.ttl(key);
     }
-    async incrementWithExpiry(key: string, ttlSecond: number): Promise<number> {
-        const result = await this.redisClient.eval(
-            `
-            local count = redis.call('INCR', KEYS[1])
-            if count == 1 then
-                redis.call('EXPIRE', KEYS[1], ARGV[1])
-            end
-            return count
-        `,
-            1,
-            key,
-            ttlSecond,
-        );
-        return result as number;
+    async incrementWithExpiry(
+        key: string,
+        ttlSeconds: number,
+    ): Promise<number> {
+        return this.redisClient.incrementWithExpiry(key, ttlSeconds);
     }
 }
-// we have add this inccrementWithExpiry method becuase: incr -> app crashes -> expiry never happens.
+// we have added this incrementWithExpiry method because: incr -> app crashes -> expiry never happens.
 // but in this method we performed conditional expiry.
 
 // in redis: commands are executed in single thread.

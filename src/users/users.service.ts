@@ -40,6 +40,13 @@ export class UsersService {
         });
     }
 
+    updateRole(id: string, role: import('../generated/prisma/enums.js').Role) {
+        return this.prismaService.user.update({
+            where: { id },
+            data: { role },
+        });
+    }
+
     deleteUser(id: string) {
         return this.prismaService.user.delete({
             where: { id },

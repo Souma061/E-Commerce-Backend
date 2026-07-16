@@ -1,12 +1,20 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { AuthService } from './auth.service.js';
-import { RegisterDto } from './dto/register.dto.js';
-import type { Request, Response } from 'express';
-import { LoginDto } from './dto/login.dto.js';
+import {
+    Body,
+    Controller,
+    Get,
+    Post,
+    Req,
+    Res,
+    UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthGuard } from './guards/auth.guard.js';
-import { CurrentUser } from './decorators/current-user.decorator.js';
+import type { Request, Response } from 'express';
 import { UsersService } from '../users/users.service.js';
+import { AuthService } from './auth.service.js';
+import { CurrentUser } from './decorators/current-user.decorator.js';
+import { LoginDto } from './dto/login.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
+import { AuthGuard } from './guards/auth.guard.js';
 
 @Controller('auth')
 export class AuthController {
