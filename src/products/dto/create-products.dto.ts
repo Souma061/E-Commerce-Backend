@@ -11,7 +11,7 @@ import {
     ValidateNested,
 } from 'class-validator';
 
-export class CreateVarientDto {
+export class CreateVariantDto {
     @IsString()
     @MinLength(3)
     @MaxLength(32)
@@ -67,6 +67,6 @@ export class CreateProductDto {
     @IsOptional()
     @IsArray()
     @ValidateNested({ each: true })
-    @Type(() => CreateVarientDto)
-    variants?: CreateVarientDto[];
+    @Type(() => CreateVariantDto)
+    variants?: CreateVariantDto[];
 }

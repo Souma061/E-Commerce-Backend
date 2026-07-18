@@ -224,6 +224,158 @@ Delete a category (Admin only).
 
 ---
 
+## Products
+
+### `POST /products`
+
+Create a product (Admin or Seller only).
+
+**Cookie required:** `session`
+
+**Request body:**
+```json
+{
+  "categoryId": "uuid",
+  "title": "MacBook Pro 14",
+  "description": "Laptop with M3 chip",
+  "price": "1999.99",
+  "stockQuantity": 10,
+  "variants": [
+    {
+      "sku": "MBP14-SPACE-GRAY",
+      "name": "Space Gray 16GB",
+      "color": "Space Gray",
+      "price": "1999.99",
+      "stockQuantity": 5
+    }
+  ]
+}
+```
+
+**Response `201`:**
+```json
+{
+  "id": "uuid",
+  "title": "MacBook Pro 14",
+  "slug": "macbook-pro-14",
+  "price": "1999.99",
+  "stockQuantity": 10,
+  "isActive": true,
+  "categoryId": "uuid",
+  "sellerId": "uuid",
+  "variants": [
+    {
+      "id": "uuid",
+      "sku": "MBP14-SPACE-GRAY",
+      "name": "Space Gray 16GB",
+      "price": "1999.99",
+      "stockQuantity": 5
+    }
+  ],
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+```
+
+**Errors:**
+- `404 Not Found` — category doesn't exist
+- `409 Conflict` — SKU already exists
+
+---
+
+### `GET /products`
+
+List active products. Public.
+
+**Response `200`:**
+```json
+[
+  {
+    "id": "uuid",
+    "title": "MacBook Pro 14",
+    "slug": "macbook-pro-14",
+    "price": "1999.99",
+    "category": { "id": "uuid", "name": "Electronics", "slug": "electronics" },
+    "variants": [ { "id": "uuid", "sku": "MBP14-SPACE-GRAY", "name": "Space Gray 16GB", "price": "1999.99" } ],
+    "createdAt": "..."
+  }
+]
+```
+
+---
+
+### `GET /products/:slug`
+
+Get a product by slug. Public.
+
+**Response `200`:** Single product object (with category + variants).
+
+**Errors:** `404 Not Found`
+
+---
+
+### `PATCH /products/:id`
+
+Update a product (Admin or Seller only). Seller can only update their own products.
+
+**Cookie required:** `session`
+
+**Request body:** (partial)
+```json
+{
+  "title": "Updated Title",
+  "price": "1499.99"
+}
+```
+
+Variants are **fully replaced** on update — all existing variants are deleted and recreated from the payload.
+
+**Response `200`:** Updated product with category + variants.
+
+**Errors:**
+- `401 Unauthorized` — missing/invalid session
+- `403 Forbidden` — seller trying to update another seller's product
+- `404 Not Found` — invalid id
+
+---
+
+### `DELETE /products/:id`
+
+Delete a product (Admin or Seller only). Seller can only delete their own products.
+
+**Cookie required:** `session`
+
+**Response `200`:**
+```json
+{
+  "message": "Product deleted"
+}
+```
+
+**Errors:**
+- `404 Not Found` — invalid id
+- `403 Forbidden` — seller trying to delete another seller's product
+
+---
+
+## CSRF Protection
+
+All state-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`) require a CSRF token.
+
+**How it works:**
+1. Server sets `csrf-token` cookie (non-httpOnly, readable by JS) with an HMAC-signed value on first visit
+2. Client reads `csrf-token` cookie and sends its value in the `x-csrf-token` header on state-changing requests
+3. Server validates the header matches the signed cookie
+
+**Headers:**
+- `Cookie: csrf-token=<value>` (set automatically by browser)
+- `x-csrf-token: <value>` (must match cookie value)
+
+**Errors:**
+- `403 Forbidden` — missing or invalid CSRF token
+
+---
+
 ## Error Format
 
 All errors return:

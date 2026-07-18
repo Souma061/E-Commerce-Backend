@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { UsersModule } from './users/users.module.js';
+import { CartModule } from './cart/cart.module.js';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -20,6 +21,7 @@ import { UsersModule } from './users/users.module.js';
         RedisModule,
         CategoriesModule,
         ProductsModule,
+        CartModule,
     ],
     controllers: [AppController],
     providers: [AppService],

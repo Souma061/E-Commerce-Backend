@@ -10,7 +10,7 @@ import {
     MinLength,
     ValidateNested,
 } from 'class-validator';
-export class UpdateVarientDto {
+export class UpdateVariantDto {
     @IsOptional()
     @IsString()
     @MinLength(3)
@@ -70,6 +70,6 @@ export class UpdateProductDto {
     @IsOptional()
     @IsArray()
     @ValidateNested({ each: true })
-    @Type(() => UpdateVarientDto)
-    variants?: UpdateVarientDto[];
+    @Type(() => UpdateVariantDto)
+    variants?: UpdateVariantDto[];
 }
