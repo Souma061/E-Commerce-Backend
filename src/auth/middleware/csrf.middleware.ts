@@ -1,12 +1,22 @@
 import { ForbiddenException, Injectable, NestMiddleware } from '@nestjs/common';
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
+function safeEqual(a: string, b: string): boolean {
+    const bufA = Buffer.from(a);
+    const bufB = Buffer.from(b);
+    return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+}
 
 @Injectable()
 export class CsrfMiddleware implements NestMiddleware {
     private readonly csrfSecret =
-        process.env.CSRF_SECRET ||
-        'default-csrf-secret-key-change-this-in-prod';
+        process.env.CSRF_SECRET ??
+        (() => {
+            if (process.env.NODE_ENV === 'production') {
+                throw new Error('CSRF_SECRET must be set in production');
+            }
+            return 'dev-only-csrf-secret';
+        })();
 
     use(request: Request, response: Response, next: NextFunction) {
         const tokenCookieName = 'csrf-token';
@@ -27,7 +37,7 @@ export class CsrfMiddleware implements NestMiddleware {
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
                 path: '/',
-                maxAge: 3600 * 24, // 24 hours
+                maxAge: 1000 * 60 * 60 * 24, // 24 hours
             });
         }
 
@@ -37,7 +47,7 @@ export class CsrfMiddleware implements NestMiddleware {
             if (!headerToken || typeof headerToken !== 'string') {
                 throw new ForbiddenException('CSRF token missing');
             }
-            if (headerToken !== csrfCookie) {
+            if (!safeEqual(headerToken, csrfCookie)) {
                 throw new ForbiddenException('Invalid CSRF token');
             }
             const [entropy, signature] = headerToken.split('.');
@@ -47,7 +57,7 @@ export class CsrfMiddleware implements NestMiddleware {
             const expectedSignature = createHmac('sha256', this.csrfSecret)
                 .update(entropy)
                 .digest('hex');
-            if (signature !== expectedSignature) {
+            if (!safeEqual(signature, expectedSignature)) {
                 throw new ForbiddenException('Invalid CSRF token');
             }
         }
