@@ -5,6 +5,7 @@ import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CsrfMiddleware } from './auth/middleware/csrf.middleware.js';
 import { CategoriesModule } from './categories/categories.module.js';
+import { OrdersModule } from './orders/orders.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ProductsModule } from './products/products.module.js';
 import { RedisModule } from './redis/redis.module.js';
@@ -20,6 +21,7 @@ import { CartModule } from './cart/cart.module.js';
         UsersModule,
         RedisModule,
         CategoriesModule,
+        OrdersModule,
         ProductsModule,
         CartModule,
     ],

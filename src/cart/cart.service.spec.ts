@@ -39,7 +39,7 @@ describe('CartService', () => {
         }).compile();
 
         service = module.get<CartService>(CartService);
-        prisma = module.get(PrismaService) as Record<string, any>;
+        prisma = module.get(PrismaService);
     });
 
     it('should be defined', () => {
@@ -76,28 +76,59 @@ describe('CartService', () => {
 
         it('should throw NotFoundException if product does not exist', async () => {
             prisma.product.findUnique = async () => null;
-            await expect(service.addItem('user-1', { productId: 'prod-1' })).rejects.toThrow(NotFoundException);
+            await expect(
+                service.addItem('user-1', { productId: 'prod-1' }),
+            ).rejects.toThrow(NotFoundException);
         });
 
         it('should throw NotFoundException if variant does not exist', async () => {
             prisma.productVariant.findUnique = async () => null;
-            await expect(service.addItem('user-1', { productId: 'prod-1', variantId: 'var-1' })).rejects.toThrow(NotFoundException);
+            await expect(
+                service.addItem('user-1', {
+                    productId: 'prod-1',
+                    variantId: 'var-1',
+                }),
+            ).rejects.toThrow(NotFoundException);
         });
 
         it('should increment quantity if item already exists', async () => {
-            prisma.cartItem.findFirst = async () => ({ id: 'item-1', cartId: 'cart-1', productId: 'prod-1', variantId: null, quantity: 2 });
-            prisma.cartItem.update = async (_args: any) => ({ id: 'item-1', cartId: 'cart-1', productId: 'prod-1', variantId: null, quantity: 3 });
+            prisma.cartItem.findFirst = async () => ({
+                id: 'item-1',
+                cartId: 'cart-1',
+                productId: 'prod-1',
+                variantId: null,
+                quantity: 2,
+            });
+            prisma.cartItem.update = async (_args: any) => ({
+                id: 'item-1',
+                cartId: 'cart-1',
+                productId: 'prod-1',
+                variantId: null,
+                quantity: 3,
+            });
 
-            const result = await service.addItem('user-1', { productId: 'prod-1', quantity: 1 });
+            const result = await service.addItem('user-1', {
+                productId: 'prod-1',
+                quantity: 1,
+            });
             expect(result.quantity).toBe(3);
         });
 
         it('should create new item if item does not exist', async () => {
             prisma.cartItem.findFirst = async () => null;
-            const newItem = { id: 'item-1', cartId: 'cart-1', productId: 'prod-1', variantId: null, quantity: 2 };
+            const newItem = {
+                id: 'item-1',
+                cartId: 'cart-1',
+                productId: 'prod-1',
+                variantId: null,
+                quantity: 2,
+            };
             prisma.cartItem.create = async () => newItem;
 
-            const result = await service.addItem('user-1', { productId: 'prod-1', quantity: 2 });
+            const result = await service.addItem('user-1', {
+                productId: 'prod-1',
+                quantity: 2,
+            });
             expect(result).toEqual(newItem);
         });
     });
@@ -110,15 +141,27 @@ describe('CartService', () => {
 
         it('should throw NotFoundException if cart item does not exist in user cart', async () => {
             prisma.cartItem.findFirst = async () => null;
-            await expect(service.updateItem('user-1', 'item-1', { quantity: 5 })).rejects.toThrow(NotFoundException);
+            await expect(
+                service.updateItem('user-1', 'item-1', { quantity: 5 }),
+            ).rejects.toThrow(NotFoundException);
         });
 
         it('should update item quantity if exists', async () => {
-            const existingItem = { id: 'item-1', cartId: 'cart-1', productId: 'prod-1', quantity: 2 };
+            const existingItem = {
+                id: 'item-1',
+                cartId: 'cart-1',
+                productId: 'prod-1',
+                quantity: 2,
+            };
             prisma.cartItem.findFirst = async () => existingItem;
-            prisma.cartItem.update = async (_args: any) => ({ ...existingItem, quantity: 5 });
+            prisma.cartItem.update = async (_args: any) => ({
+                ...existingItem,
+                quantity: 5,
+            });
 
-            const result = await service.updateItem('user-1', 'item-1', { quantity: 5 });
+            const result = await service.updateItem('user-1', 'item-1', {
+                quantity: 5,
+            });
             expect(result.quantity).toBe(5);
         });
     });
@@ -131,11 +174,18 @@ describe('CartService', () => {
 
         it('should throw NotFoundException if item does not exist in user cart', async () => {
             prisma.cartItem.findFirst = async () => null;
-            await expect(service.removeItem('user-1', 'item-1')).rejects.toThrow(NotFoundException);
+            await expect(
+                service.removeItem('user-1', 'item-1'),
+            ).rejects.toThrow(NotFoundException);
         });
 
         it('should delete item and return success message', async () => {
-            const existingItem = { id: 'item-1', cartId: 'cart-1', productId: 'prod-1', quantity: 2 };
+            const existingItem = {
+                id: 'item-1',
+                cartId: 'cart-1',
+                productId: 'prod-1',
+                quantity: 2,
+            };
             prisma.cartItem.findFirst = async () => existingItem;
 
             const result = await service.removeItem('user-1', 'item-1');

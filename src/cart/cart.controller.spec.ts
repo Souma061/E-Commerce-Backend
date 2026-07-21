@@ -8,9 +8,20 @@ describe('CartController', () => {
     let service: CartService;
 
     const mockCartService = {
-        findCart: async (userId: string) => ({ id: 'cart-1', userId, items: [] }),
-        addItem: async (userId: string, dto: any) => ({ id: 'item-1', cartId: 'cart-1', ...dto }),
-        updateItem: async (userId: string, itemId: string, dto: any) => ({ id: itemId, ...dto }),
+        findCart: async (userId: string) => ({
+            id: 'cart-1',
+            userId,
+            items: [],
+        }),
+        addItem: async (userId: string, dto: any) => ({
+            id: 'item-1',
+            cartId: 'cart-1',
+            ...dto,
+        }),
+        updateItem: async (userId: string, itemId: string, dto: any) => ({
+            id: itemId,
+            ...dto,
+        }),
         removeItem: async () => ({ message: 'Item removed successfully' }),
         clearCart: async () => ({ message: 'Cart cleared successfully' }),
     };
@@ -40,7 +51,11 @@ describe('CartController', () => {
     describe('getCart', () => {
         it('should return user cart', async () => {
             const result = await controller.getCart({ userId: 'user-1' });
-            expect(result).toEqual({ id: 'cart-1', userId: 'user-1', items: [] });
+            expect(result).toEqual({
+                id: 'cart-1',
+                userId: 'user-1',
+                items: [],
+            });
         });
     });
 
@@ -55,14 +70,21 @@ describe('CartController', () => {
     describe('updateItem', () => {
         it('should update cart item quantity', async () => {
             const dto = { quantity: 5 };
-            const result = await controller.updateItem({ userId: 'user-1' }, 'item-1', dto);
+            const result = await controller.updateItem(
+                { userId: 'user-1' },
+                'item-1',
+                dto,
+            );
             expect(result).toEqual({ id: 'item-1', quantity: 5 });
         });
     });
 
     describe('removeItem', () => {
         it('should remove item from cart', async () => {
-            const result = await controller.removeItem({ userId: 'user-1' }, 'item-1');
+            const result = await controller.removeItem(
+                { userId: 'user-1' },
+                'item-1',
+            );
             expect(result).toEqual({ message: 'Item removed successfully' });
         });
     });

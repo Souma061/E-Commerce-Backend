@@ -13,6 +13,16 @@ enum Role {
   SELLER
 }
 
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
 model User {
   id           String    @id @default(uuid()) @map("user_id")
   email        String    @unique
@@ -23,6 +33,7 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   products     Product[]
   cart         Cart?
+  orders       Order[]
 
   @@map("users")
 }
@@ -53,6 +64,7 @@ model Product {
   isActive      Boolean          @default(true) @map("is_active")
   variants      ProductVariant[]
   cartItems     CartItem[]
+  orderItems    OrderItem[]
   createdAt     DateTime         @default(now()) @map("created_at")
   updatedAt     DateTime         @updatedAt @map("updated_at")
 
@@ -72,6 +84,7 @@ model ProductVariant {
   price         Decimal @db.Decimal(10, 2)
   stockQuantity Int     @default(0) @map("stock_quantity")
   cartItems     CartItem[]
+  orderItems    OrderItem[]
   createdAt     DateTime @default(now()) @map("created_at")
 
   @@index([productId])
@@ -106,3 +119,49 @@ model CartItem {
   @@index([variantId])
   @@map("cart_items")
 }
+
+model Order {
+  id             String      @id @default(uuid()) @map("order_id")
+  userId         String      @map("user_id")
+  user           User        @relation(fields: [userId], references: [id])
+  status         OrderStatus @default(PENDING) @map("status")
+  subtotalAmount Decimal     @default(0) @db.Decimal(10, 2) @map("subtotal_amount")
+  shippingAmount Decimal     @default(0) @db.Decimal(10, 2) @map("shipping_amount")
+  discountAmount Decimal     @default(0) @db.Decimal(10, 2) @map("discount_amount")
+  totalAmount    Decimal     @default(0) @db.Decimal(10, 2) @map("total_amount")
+  currency       String      @default("INR") @map("currency")
+  items          OrderItem[]
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id String @id @default(uuid()) @map("order_item_id")
+  orderId String @map("order_id")
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String @map("product_id")
+  product Product @relation(fields: [productId], references: [id])
+
+  variantId String? @map("variant_id")
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  productTitle String @map("product_title")
+  variantName String? @map("variant_name")
+  sku String?
+
+  quantity Int @default(1)
+  unitPrice Decimal @db.Decimal(10, 2) @map("unit_price")
+  totalPrice Decimal @db.Decimal(10, 2) @map("total_price")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
